@@ -82,14 +82,16 @@ def gradientAscent_batch(dataMatin, classLabels, batch=None):
 	weights = np.ones((n, 1)) #将回归系数初始化为1，(n, 1)
 
 	for k in range(maxCycles):
-		sample_index = list(range(len(dataMatin)))
-		random.shuffle(sample_index)
-		for i in range(0, len(sample_index), batch):
+		index_ = list(range(len(dataMatin)))
+		random.shuffle(index_)
+		for i in range(0, len(index_), batch):
 			end = i + batch
-			if end > len(sample_index): 
-				end = len(sample_index)
-			dataBatch = dataMatrix[i: end]
-			labelBatch = labelMatrix[i: end]
+			if end > len(index_): 
+				end = len(index_)
+			sample_index = index_[i: end]
+
+			dataBatch = dataMatrix[sample_index]
+			labelBatch = labelMatrix[sample_index]
 
 			#每次使用batch个数据进行一次计算
 			h = sigmoid(dataBatch * weights) #矩阵乘法，h.shape为(100, 1)
@@ -106,14 +108,16 @@ def getBatch(dataMatrix, labelMatrix, batch, maxStep):
 	"""
 	step = 0
 	while step < maxStep:
-		sample_index = list(range(dataMatrix.shape[0]))
-		random.shuffle(sample_index)
-		for i in range(0, len(sample_index), batch):
+		index_ = list(range(dataMatrix.shape[0]))
+		random.shuffle(index_)
+		for i in range(0, len(index_), batch):
 			end = i + batch
-			if end > len(sample_index): 
-				end = len(sample_index)
-			dataBatch = dataMatrix[i: end]
-			labelBatch = labelMatrix[i: end]	
+			if end > len(index_): 
+				end = len(index_)
+			sample_index = index_[i: end]
+
+			dataBatch = dataMatrix[sample_index]
+			labelBatch = labelMatrix[sample_index]	
 			
 			yield dataBatch, labelBatch	
 
@@ -154,6 +158,6 @@ def gradientAscent_batch_2(dataMatin, classLabels, batch=None):
 
 if __name__ == '__main__':
 	dataMat, labelMat = loadDataset()
-	# weights = gradientAscent_batch(dataMat, labelMat, batch=20)
-	weights = gradientAscent_batch_2(dataMat, labelMat, batch=100)
+	weights = gradientAscent_batch(dataMat, labelMat, batch=20)
+	# weights = gradientAscent_batch_2(dataMat, labelMat, batch=100)
 	print(weights)
