@@ -178,7 +178,7 @@ def showDataset_support_vector(dataMat, labelMat, alphas, b):
 	用于在图像中刻画数据集
 	dataMat, labelMat是loadData函数的返回值
 	alphas, b为SMO_simple()函数的返回值
-	并标注支持向量
+	并标注支持向量与分隔平面
 	"""
 	fig = plt.figure()
 	plt.title('Dataset')
