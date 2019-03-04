@@ -153,6 +153,13 @@ def regressionAdaBoostTrain(dataArray, labels, stopResidue, numIterations=40):
 	return weakStumps
 
 
+
+	
+
+
+	
+
+
 if __name__ == '__main__':
 	dataMat = range(1, 11)
 	dataMat = np.reshape(dataMat, (len(dataMat), 1))

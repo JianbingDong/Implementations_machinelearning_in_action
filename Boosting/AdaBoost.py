@@ -12,10 +12,10 @@ def loadSimpData():
 	"""
 	dataMat = [[1., 2.1],
 			   # [1.5, 1.6],
-			   [2, 1.1],
+			   [2,  1.1],
 			   [1.3, 1.],
-			   [1., 1.],
-			   [2., 1.]]
+			   [1.,  1.],
+			   [2.,  1.]]
 
 	labels = [1.0, 1.0, -1.0, -1.0, 1.0]
 
@@ -104,7 +104,7 @@ def buildStump(dataArray, labels, D):
 				threshValue = (rangeMin + float(j) * stepSize) #计算当前的阈值
 				predictedValues = stumpClassify(dataMat, i, 
 									threshValue, inEqual) #带入函数计算数据集在当前阈值下的分类结果
-				
+
 				errArray = np.ones((m, 1)) #构建一个全1矩阵，用于存储每个样本是否被误分类
 
 				errArray[predictedValues == np.reshape(labelMat, (len(labelMat), 1))] = 0 #将未被误分类的样本对应位置置为０
@@ -144,13 +144,13 @@ def adaBoostTrainDecisionTree(dataArr, labels, numIteration=40):
 		bestStumps, error, bestClasEst = buildStump(dataArr, labels, D) #以当前权重向量Ｄ，生成一个决策树桩
 
 
-		print("Current D: ", np.transpose(D)) #输出当前权重向量
+		# print("Current D: ", np.transpose(D)) #输出当前权重向量
 
 		alpha = float(0.5 * np.log((1 - error) / np.maximum(error, 1e-16) + 1e-16)) #用式8.2计算当前分类器的权重alpha
 
 		bestStumps['alpha'] = alpha #在决策树中记录此信息
 		weakClassArr.append(bestStumps) #加入到弱分类器列表
-		print("Current estimated class: ", np.transpose(bestClasEst)) #输出当前样本预测结果
+		# print("Current estimated class: ", np.transpose(bestClasEst)) #输出当前样本预测结果
 
 		expAlpha = np.multiply(-1 * alpha * np.reshape(labels, (len(labels), 1)), bestClasEst) #计算所有 -alpha_m * yi * Gm(xi)
 
@@ -158,7 +158,7 @@ def adaBoostTrainDecisionTree(dataArr, labels, numIteration=40):
 		D = D_new / np.sum(D_new) #将其归一化, 即式8.4的分母
 
 		aggClassEst += alpha * bestClasEst #构建分类器线性组合, 即将当前数据带入到式子8.6的计算结果
-		print("Current aggregate class estimation: ", np.transpose(aggClassEst))
+		# print("Current aggregate class estimation: ", np.transpose(aggClassEst))
 
 		aggErrors = np.multiply(np.sign(aggClassEst) != np.reshape(labels, (len(labels), 1)), np.ones((m, 1))) #线性组合分类器的错误分类样本
 
@@ -173,18 +173,76 @@ def adaBoostTrainDecisionTree(dataArr, labels, numIteration=40):
 
 
 
+def adaboostClassify(inData, classifierArr):
+	"""
+	此函数集成弱分类器来计算输入数据的预测值
+	#arguments:
+		inData: 待计算的数据设计矩阵;
+		classifier: list, 弱分类器列表
+	"""
+	dataMat = np.array(inData)
+	m = dataMat.shape[0] #样本数量
 
+	aggClassEst = np.zeros((m, 1)) #创建一个数据结构来记录每个样本的输出值
+
+	for i in range(len(classifierArr)): #遍历每个弱分类器
+		classEst = stumpClassify(dataMat, classifierArr[i]['dim'],
+			classifierArr[i]['thresh'], classifierArr[i]['ineq']) #当前分类器对输入数据的预测结果
+		aggClassEst += classifierArr[i]['alpha'] * classEst #将其乘上对应的权重，相加到集成分类器上
+
+		# print("Current aggClassEst: ", aggClassEst)
+
+	aggClassEst = np.reshape(aggClassEst, (aggClassEst.shape[0], )) #将集成分类器的预测结果转换为行向量
+
+	return np.sign(aggClassEst)
+
+
+def loadDataset(fileName):
+	"""
+	此函数用于从文件中载入数据
+	#arguments:
+		fileName: string, 文件名称
+	#returns:
+		dataMat, 数据设计矩阵
+		labels: list, 对应标签
+	"""
+	dataMat = []
+	labels = []
+
+	numFeat = len(open(fileName).readline().split('\t'))
+
+	with open(fileName, 'r') as file:
+		for line in file.readlines():
+			lineArr = []
+			curLine = line.strip().split('\t')
+			for i in range(numFeat - 1):
+				lineArr.append(float(curLine[i]))
+
+			dataMat.append(lineArr)
+			labels.append(float(curLine[-1]))
+
+	return dataMat, labels
 
 
 
 
 if __name__ == '__main__':
-	# dataMat, labels = loadSimpData()
+	# dataMat, labels = loadSimpData() #《机器学习实战》中的数据
 	# showDataset(dataMat, labels)
-	dataMat = range(10)
-	dataMat = np.reshape(dataMat, (len(dataMat), 1))
-	labels = [1, 1, 1, -1, -1, -1, 1, 1, 1, -1]
 
-	weakClassArr = adaBoostTrainDecisionTree(dataMat, labels, numIteration=40)
-	for item in weakClassArr:
-		print(item['alpha'])
+	# dataMat = range(10) #《统计学习方法》中的数据
+	# dataMat = np.reshape(dataMat, (len(dataMat), 1))
+	# labels = [1, 1, 1, -1, -1, -1, 1, 1, 1, -1]
+
+	fileName = r'./horseColicTraining2.txt'
+	dataMat, labels = loadDataset(fileName)
+
+	weakClassArr = adaBoostTrainDecisionTree(dataMat, labels, numIteration=10)
+
+	testName = r'./horseColicTest2.txt'
+	testMat, testLabel = loadDataset(testName)
+	testResult = adaboostClassify(testMat, weakClassArr)
+
+	totalError = np.ones((len(testLabel), 1))
+	totalErrorRate = np.sum(totalError[testResult != testLabel]) / len(testLabel)
+	print("test error rate: ", totalErrorRate)
